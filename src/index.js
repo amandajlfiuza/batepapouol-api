@@ -88,4 +88,24 @@ server.post('/messages', async (req, res) => {
     res.sendStatus(201);
 });
 
+server.get('/messages', async (req, res) => {
+    const { limit } = req.query;
+    const user = req.headers.user;
+
+    if (user === undefined) {
+        res.sendStatus(422);
+        return;
+    }
+    
+    if (limit !== undefined) {
+        const responseLimit = await db.collection('messages').find().sort({time: -1}).limit(Number(limit)).toArray();
+        res.send(responseLimit);
+        return;
+    }
+
+    const allMessages = await db.collection('messages').find().toArray();
+    const response = allMessages.filter(message => (message.from === user || message.to === user || message.to === 'Todos'));
+    res.send(response);
+});
+
 server.listen(5000, () => console.log('Listening on port 5000'));
