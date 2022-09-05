@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import joi from 'joi';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -65,8 +65,8 @@ server.post('/messages', async (req, res) => {
         return;
     }
 
-    const response = await db.collection('participants').find({ name: fromMessage }).toArray();
-    if (response.length === 0) {
+    const participant = await db.collection('participants').findOne({ name: fromMessage });
+    if (!participant) {
         res.sendStatus(422);
         return;
     }
@@ -106,6 +106,30 @@ server.get('/messages', async (req, res) => {
     const allMessages = await db.collection('messages').find().toArray();
     const response = allMessages.filter(message => (message.from === user || message.to === user || message.to === 'Todos'));
     res.send(response);
+});
+
+server.post('/status', async (req, res) => {
+    const user = req.headers.user;
+
+    if (user === undefined) {
+        res.sendStatus(422);
+        return;
+    }
+
+    const participant = await db.collection('participants').findOne({name: user});
+    if (!participant) {
+        res.sendStatus(404);
+        return;
+    }
+
+    const newStatus = {
+        lastStatus: Date.now()
+    };
+    await db.collection('participants').updateOne({
+        name: participant.name
+    }, { $set: newStatus });
+
+    res.sendStatus(200);
 });
 
 server.listen(5000, () => console.log('Listening on port 5000'));
