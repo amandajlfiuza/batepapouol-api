@@ -16,6 +16,11 @@ mongoClient.connect().then(() => db = mongoClient.db("batepapo-uol"));
 const participantSchema = joi.object({
     name: joi.string().empty(' ').required()
 });
+const messageSchema = joi.object({
+    to: joi.string().empty(' ').required(),
+    text: joi.string().empty(' ').required(),
+    type: joi.string().valid('message', 'private_message').required()
+})
 
 server.post('/participants', async (req, res) => {
     const participant = req.body;
@@ -51,6 +56,36 @@ server.get('/participants', async (req, res) => {
     res.send(response);
 });
 
+server.post('/messages', async (req, res) => {
+    const bodyMessage = req.body;
+    const fromMessage = req.headers.user;
 
+    if (fromMessage === undefined) {
+        res.sendStatus(422);
+        return;
+    }
+
+    const response = await db.collection('participants').find({ name: fromMessage }).toArray();
+    if (response.length === 0) {
+        res.sendStatus(422);
+        return;
+    }
+
+    const validation = messageSchema.validate(bodyMessage);
+    if (validation.error) {
+        res.sendStatus(422);
+        return;
+    }
+
+    db.collection('messages').insertOne({
+        from: fromMessage,
+        to: bodyMessage.to,
+        text: bodyMessage.text,
+        type: bodyMessage.type,
+        time: dayjs().format('HH:mm:ss')
+    });
+
+    res.sendStatus(201);
+});
 
 server.listen(5000, () => console.log('Listening on port 5000'));
