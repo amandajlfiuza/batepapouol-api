@@ -99,8 +99,10 @@ server.get('/messages', async (req, res) => {
     }
     
     if (limit !== undefined) {
-        const responseLimit = await db.collection('messages').find().sort({time: -1}).limit(Number(limit)).toArray();
-        res.send(responseLimit);
+        const responseLimit = await db.collection('messages').find().sort({time: -1}).limit(Number(limit));
+        const responseMessages = await responseLimit.sort({time: 1}).toArray();
+        const resp = responseMessages.filter(message => (message.from === user || message.to === user || message.to === 'Todos'));
+        res.send(resp);
         return;
     }
 
