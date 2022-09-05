@@ -16,6 +16,7 @@ mongoClient.connect().then(() => db = mongoClient.db("batepapo-uol"));
 const participantSchema = joi.object({
     name: joi.string().empty(' ').required()
 });
+
 const messageSchema = joi.object({
     to: joi.string().empty(' ').required(),
     text: joi.string().empty(' ').required(),
@@ -131,5 +132,10 @@ server.post('/status', async (req, res) => {
 
     res.sendStatus(200);
 });
+
+setInterval(async () => {
+    const now = Date.now();
+    await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000}});
+}, 15000);
 
 server.listen(5000, () => console.log('Listening on port 5000'));
