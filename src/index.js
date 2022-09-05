@@ -135,6 +135,18 @@ server.post('/status', async (req, res) => {
 
 setInterval(async () => {
     const now = Date.now();
+    const inactives = await db.collection('participants').find({lastStatus: {$lt: now-10000}}).toArray();
+
+    inactives.map(inactive => {
+        db.collection('messages').insertOne({
+            from: inactive.name,
+            to: 'Todos',
+            text: 'saiu da sala...',
+            type: 'status',
+            time: dayjs().format('HH:mm:ss')
+        });
+    });
+
     await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000}});
 }, 15000);
 
